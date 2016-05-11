@@ -265,10 +265,16 @@ class SchedulerCommand extends CConsoleCommand
                 $trigger = true;
                 
                 //update the db, the item has now been executed
-                $this->connection->createCommand()->update('yii-schedules', array(
+                $rowsAffected = $this->connection->createCommand()->update('yii-schedules', array(
                     'executed' => 1
-                ), 'id=:id', array(':id'=>$schedule['id']));
-
+                ), 'id=:id AND executed=0', array(':id'=>$schedule['id']));
+                
+                // If another instance of Yii Scheduler has already executed this job then don't do anything
+                if ($rowsAffected === 0) {
+                    echo "Another instance has already run this job: $schedule['name']";
+                    break; // continue the foreach loop
+                }
+                
                 $url = $schedule['url'];
                 if ($url)
                     $result = $this->executeUrl($url);
